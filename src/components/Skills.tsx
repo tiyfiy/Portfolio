@@ -24,6 +24,7 @@ export default function Skills() {
   const enteredRef = useRef(false);
   const flippingRef = useRef(false);
   const flipState = useRef<ReturnType<typeof Flip.getState> | null>(null);
+  const flipAnim = useRef<gsap.core.Timeline | null>(null);
   useReveal(ref);
 
   const markEntered = () => {
@@ -124,8 +125,10 @@ export default function Skills() {
   const isMatch = (cat: SkillCategory) => filter === "all" || cat === filter;
 
   const onTab = (next: Filter) => {
-    if (next === filter || flippingRef.current) return;
+    if (next === filter) return;
     if (!prefersReducedMotion() && gridRef.current) {
+      // stop any in-flight shuffle where it is; the new flip starts from there
+      flipAnim.current?.kill();
       flipState.current = Flip.getState(gridRef.current.querySelectorAll(".skill"));
     }
     setFilter(next);
@@ -139,7 +142,7 @@ export default function Skills() {
     const pills = gridRef.current!.querySelectorAll(".skill");
     flippingRef.current = true;
     gsap.set(pills, { x: 0, y: 0 }); // drop magnet offsets so pills land on the grid
-    Flip.from(state, {
+    flipAnim.current = Flip.from(state, {
       duration: 0.75,
       ease: "power3.inOut",
       stagger: 0.012,

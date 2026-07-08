@@ -31,9 +31,16 @@ export default function Projects() {
                   </span>
                 ))}
               </div>
-              <a className="project__link" href={project.href}>
-                View project →
-              </a>
+              {project.href && (
+                <a
+                  className="project__link"
+                  href={project.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  View project →
+                </a>
+              )}
             </div>
           </article>
         ))}

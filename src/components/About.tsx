@@ -17,19 +17,16 @@ export default function About() {
       </h2>
       <div className="about__grid">
         <p className="about__lead" data-reveal>
-          I&apos;m a full-stack developer who cares as much about the last 16
-          milliseconds of a frame as the first byte of a response.
+          I&apos;m a CS student working as a freelance full-stack developer.
         </p>
         <div className="about__body" data-reveal>
           <p>
-            I design and ship complete products: REST and GraphQL APIs, realtime
-            backends, and interfaces that feel alive without getting in the way.
-            Lately I&apos;ve been deep in WebGL and motion design — turning data
-            and interaction into things you can almost touch.
-          </p>
-          <p>
-            When I&apos;m not shipping, I&apos;m prototyping shaders, breaking
-            animation libraries, and putting them back together better.
+            Most of my work is full-stack, but the part I keep coming back to
+            is the data-heavy backend side: live streams, message queues, and
+            systems that have to stay correct under load. I like understanding
+            a problem all the way down before I write anything, because the
+            simplest solution only looks simple if you know why it works. Clean
+            code, choices I can defend, nothing clever for the sake of it.
           </p>
         </div>
       </div>

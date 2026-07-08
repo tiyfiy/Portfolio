@@ -106,6 +106,21 @@ a {
   display: block;
 }
 
+/* dark scrim behind the text so it stays readable over the bright particles */
+.hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse 62% 75% at 30% 50%,
+    rgba(10, 10, 10, 0.85) 0%,
+    rgba(10, 10, 10, 0.45) 45%,
+    transparent 72%
+  );
+}
+
 .hero__content {
   position: absolute;
   left: 7vw;
@@ -114,6 +129,7 @@ a {
   z-index: 2;
   max-width: 720px;
   pointer-events: none;
+  text-shadow: 0 2px 28px rgba(10, 10, 10, 0.9);
 }
 
 .hero__content a {
@@ -137,14 +153,14 @@ a {
   font-size: clamp(22px, 3vw, 40px);
   font-weight: 400;
   letter-spacing: -0.02em;
-  color: var(--ink-dim);
+  color: rgba(232, 232, 228, 0.75);
   margin-top: 8px;
 }
 
 .hero__tagline {
   margin-top: 26px;
   max-width: 460px;
-  color: var(--ink-dim);
+  color: rgba(232, 232, 228, 0.75);
   font-size: 17px;
 }
 

@@ -26,7 +26,14 @@ export default function Nav() {
 
   return (
     <nav ref={navRef} className={`nav${scrolled ? " nav--scrolled" : ""}`}>
-      <a className="nav__logo" href="#top">
+      <a
+        className="nav__logo"
+        href="#top"
+        onClick={(e) => {
+          e.preventDefault();
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }}
+      >
         TM.
       </a>
       <div className="nav__links">

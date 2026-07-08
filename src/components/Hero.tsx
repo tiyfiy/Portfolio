@@ -13,16 +13,25 @@ gsap.registerPlugin(ScrollTrigger);
 const COLS = 220;
 const ROWS = 220;
 const SPACING = 0.14;
+const MAX_CLICKS = 6;
 
 const vertexShader = /* glsl */ `
+  #define MAX_CLICKS ${MAX_CLICKS}
+
   uniform float uTime;
   uniform vec2  uMouse;
   uniform float uPixelRatio;
   uniform float uProgress; // 0 = full ocean, 1 = single flat line
+  uniform float uScaleX;   // grid is stretched in x to fill the frustum
+  uniform vec2  uClickPos[MAX_CLICKS];
+  uniform float uClickTimes[MAX_CLICKS];
   varying float vHeight;
 
   void main() {
     vec3 p = position;
+
+    // world-space xz, so wavelengths and ripples stay round despite the x stretch
+    vec2 wpos = vec2(position.x * uScaleX, position.z);
 
     // depth collapses: the whole grid folds into one line along x
     float collapse = smoothstep(0.0, 0.85, uProgress);
@@ -30,16 +39,25 @@ const vertexShader = /* glsl */ `
 
     // the swell calms down as we collapse
     float amp = 0.35 * (1.0 - smoothstep(0.0, 0.7, uProgress));
-    float wave1 = sin(position.x * 0.9 + uTime * 0.8);
-    float wave2 = sin(position.z * 1.3 + uTime * 0.6 + position.x * 0.4);
+    float wave1 = sin(wpos.x * 0.9 + uTime * 0.8);
+    float wave2 = sin(wpos.y * 1.3 + uTime * 0.6 + wpos.x * 0.4);
     p.y = (wave1 + wave2) * amp;
 
     // mouse ripple, fading out with the collapse
-    float d = distance(position.xz, uMouse);
+    float d = distance(wpos, uMouse);
     p.y += sin(d * 3.0 - uTime * 4.0) * 0.4 * exp(-d * 0.6) * (1.0 - collapse);
 
+    // click splashes: rings that expand outward and die down
+    for (int i = 0; i < MAX_CLICKS; i++) {
+      float t = uTime - uClickTimes[i];
+      if (t < 0.0 || t > 4.0) continue;
+      float cd = distance(wpos, uClickPos[i]);
+      float ring = exp(-pow((cd - t * 3.2) * 1.6, 2.0));
+      p.y += ring * 1.1 * exp(-t * 1.1) * (1.0 - collapse);
+    }
+
     // once it's a line, a faint pulse keeps travelling along it
-    p.y += sin(position.x * 2.0 + uTime * 1.5) * 0.06 * smoothstep(0.6, 1.0, uProgress);
+    p.y += sin(wpos.x * 2.0 + uTime * 1.5) * 0.06 * smoothstep(0.6, 1.0, uProgress);
 
     vHeight = p.y;
 
@@ -99,6 +117,12 @@ export default function Hero() {
     const geo = new THREE.BufferGeometry();
     geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
 
+    const clickPos = Array.from(
+      { length: MAX_CLICKS },
+      () => new THREE.Vector2(999, 999)
+    );
+    const clickTimes = new Float32Array(MAX_CLICKS).fill(-1000);
+
     const mat = new THREE.ShaderMaterial({
       transparent: true,
       depthWrite: false,
@@ -108,6 +132,9 @@ export default function Hero() {
         uPixelRatio: { value: renderer.getPixelRatio() },
         uProgress: { value: 0 },
         uOpacity: { value: 1 },
+        uScaleX: { value: 1 },
+        uClickPos: { value: clickPos },
+        uClickTimes: { value: clickTimes },
       },
       vertexShader,
       fragmentShader,
@@ -116,20 +143,51 @@ export default function Hero() {
     const points = new THREE.Points(geo, mat);
     scene.add(points);
 
+    // stretch the grid in x so its far edge fills the frustum on any aspect ratio
+    const initialCamPos = camera.position.clone();
+    const gridHalfWidth = (COLS / 2) * SPACING;
+    const gridHalfDepth = (ROWS / 2) * SPACING;
+    const fitWidth = () => {
+      const dist = initialCamPos.distanceTo(
+        new THREE.Vector3(0, 0, -gridHalfDepth)
+      );
+      const halfW =
+        Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) *
+        camera.aspect *
+        dist;
+      points.scale.x = Math.max(1, (halfW * 1.15) / gridHalfWidth);
+      mat.uniforms.uScaleX.value = points.scale.x;
+    };
+    fitWidth();
+
     // mouse ripple: project cursor onto the y=0 plane
     const raycaster = new THREE.Raycaster();
     const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
     const hit = new THREE.Vector3();
     const ndc = new THREE.Vector2();
 
-    const onPointerMove = (e: PointerEvent) => {
+    const pointerToPlane = (e: PointerEvent) => {
       ndc.set(
         (e.clientX / window.innerWidth) * 2 - 1,
         -(e.clientY / window.innerHeight) * 2 + 1
       );
       raycaster.setFromCamera(ndc, camera);
-      if (raycaster.ray.intersectPlane(plane, hit)) {
+      return raycaster.ray.intersectPlane(plane, hit);
+    };
+
+    const onPointerMove = (e: PointerEvent) => {
+      if (pointerToPlane(e)) {
         mat.uniforms.uMouse.value.set(hit.x, hit.z);
+      }
+    };
+
+    let clickIndex = 0;
+    const onPointerDown = (e: PointerEvent) => {
+      if (reduceMotion || state.progress > 0.1) return;
+      if (pointerToPlane(e)) {
+        clickPos[clickIndex].set(hit.x, hit.z);
+        clickTimes[clickIndex] = (performance.now() - start) / 1000;
+        clickIndex = (clickIndex + 1) % MAX_CLICKS;
       }
     };
 
@@ -138,9 +196,11 @@ export default function Hero() {
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
       mat.uniforms.uPixelRatio.value = renderer.getPixelRatio();
+      fitWidth();
     };
 
     window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerdown", onPointerDown);
     window.addEventListener("resize", onResize);
 
     // values tweened by the scroll timeline, read every frame
@@ -213,6 +273,7 @@ export default function Hero() {
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerdown", onPointerDown);
       window.removeEventListener("resize", onResize);
       ctx.revert();
       geo.dispose();
@@ -232,7 +293,7 @@ export default function Hero() {
         <h1 className="hero__name">{profile.name}</h1>
         <h2 className="hero__role">{profile.role}</h2>
         <p className="hero__tagline" data-load-fade>
-          I build fast, expressive web experiences — from database to shader.
+          I don&apos;t ship code I can&apos;t explain.
         </p>
         <div className="hero__cta" data-load-fade>
           <a className="btn btn--solid" href="#projects">

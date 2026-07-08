@@ -1,46 +1,61 @@
-// Placeholder content — edit this file to make the portfolio yours.
+// Site content lives here.
 
 export const profile = {
   name: "Timotej Maučec",
   role: "Full-Stack Developer",
-  email: "timotejmau@gmail.com",
+  email: "timotej.maucec1@gmail.com",
   socials: [
-    { label: "GitHub", href: "https://github.com/" },
-    { label: "LinkedIn", href: "https://linkedin.com/" },
-    { label: "X", href: "https://x.com/" },
+    { label: "GitHub", href: "https://github.com/tiyfiy" },
+    {
+      label: "LinkedIn",
+      href: "https://www.linkedin.com/in/timotej-mau%C4%8Dec-448a1036b/",
+    },
   ],
 };
 
-export type SkillCategory = "frontend" | "backend" | "motion" | "tools";
+export type SkillCategory =
+  | "languages"
+  | "frontend"
+  | "data"
+  | "mobile"
+  | "tools";
 
 export const skillCategories: { id: SkillCategory | "all"; label: string }[] = [
   { id: "all", label: "All" },
+  { id: "languages", label: "Languages" },
   { id: "frontend", label: "Frontend" },
-  { id: "backend", label: "Backend" },
-  { id: "motion", label: "3D & Motion" },
+  { id: "data", label: "Data" },
+  { id: "mobile", label: "Mobile" },
   { id: "tools", label: "Tools" },
 ];
 
 export const skills: { name: string; category: SkillCategory }[] = [
-  { name: "JavaScript", category: "frontend" },
-  { name: "TypeScript", category: "frontend" },
+  { name: "Go", category: "languages" },
+  { name: "Python", category: "languages" },
+  { name: "C++", category: "languages" },
+  { name: "C# / .NET", category: "languages" },
+  { name: "JavaScript", category: "languages" },
+  { name: "TypeScript", category: "languages" },
+  { name: "Kotlin", category: "languages" },
   { name: "React", category: "frontend" },
   { name: "Next.js", category: "frontend" },
   { name: "Tailwind CSS", category: "frontend" },
-  { name: "Node.js", category: "backend" },
-  { name: "Express", category: "backend" },
-  { name: "PostgreSQL", category: "backend" },
-  { name: "MongoDB", category: "backend" },
-  { name: "GraphQL", category: "backend" },
-  { name: "Three.js", category: "motion" },
-  { name: "WebGL / GLSL", category: "motion" },
-  { name: "GSAP", category: "motion" },
-  { name: "anime.js", category: "motion" },
+  { name: "PostgreSQL", category: "data" },
+  { name: "MySQL", category: "data" },
+  { name: "MongoDB", category: "data" },
+  { name: "Redis", category: "data" },
+  { name: "Snowflake", category: "data" },
+  { name: "Supabase", category: "data" },
+  { name: "Firebase", category: "data" },
+  { name: "React Native", category: "mobile" },
+  { name: "Flutter", category: "mobile" },
+  { name: "Android Studio", category: "mobile" },
+  { name: "Git", category: "tools" },
   { name: "Docker", category: "tools" },
-  { name: "Git / CI-CD", category: "tools" },
-  { name: "Vite", category: "tools" },
-  { name: "Vitest", category: "tools" },
-  { name: "Figma", category: "tools" },
+  { name: "CI/CD", category: "tools" },
+  { name: "Postman", category: "tools" },
+  { name: "Wireshark", category: "tools" },
+  { name: "DBeaver", category: "tools" },
 ];
 
 export type ProjectVisualKind = "pulse" | "globe" | "rings";
@@ -49,33 +64,24 @@ export type Project = {
   title: string;
   description: string;
   tags: string[];
-  href: string;
+  href?: string;
   visual: ProjectVisualKind;
 };
 
 export const projects: Project[] = [
   {
-    title: "Pulse",
+    title: "Digital twin for city buses",
     description:
-      "Realtime analytics dashboard streaming live metrics over WebSockets, with custom-drawn charts that stay smooth at 60fps even under heavy data load.",
-    tags: ["React", "Node.js", "WebSockets", "D3"],
-    href: "#",
+      "A live digital twin of a city's bus network. It pulls real-time data and predicts where buses actually are, based on what riders report, not just the official schedule. I built the whole stack: Go backend, database, MQTT pipeline for the live data, admin dashboard, web frontend, an Android app, a desktop client in libGDX, and a blockchain layer that stores the tamper-sensitive records so nobody can quietly rewrite the history.",
+    tags: ["Go", "MQTT", "Android", "libGDX", "Blockchain", "Real-time"],
+    href: "https://github.com/projectBlockchainRIT/projectMariborBusi",
     visual: "pulse",
   },
   {
-    title: "Atlas",
+    title: "Invoice compliance app for Shopify",
     description:
-      "Headless e-commerce platform with server-rendered storefronts, Stripe checkout, and an admin panel for inventory and order management.",
-    tags: ["Next.js", "PostgreSQL", "Stripe", "Prisma"],
-    href: "#",
-    visual: "globe",
-  },
-  {
-    title: "Orbit",
-    description:
-      "Interactive 3D product configurator — custom GLSL materials, physically-based lighting, and scroll-choreographed camera moves.",
-    tags: ["Three.js", "GLSL", "GSAP", "Vite"],
-    href: "#",
+      "An embedded Shopify app that keeps merchant invoices compliant. I built the auth flow into a Go backend and wired up the webhooks that move the data between Shopify and the app. Embedded app auth is one of those things that sounds trivial until you've actually done it, so getting it clean was the win here.",
+    tags: ["Go", "Shopify", "OAuth", "Webhooks"],
     visual: "rings",
   },
 ];

@@ -9,22 +9,10 @@ import { profile } from "@/lib/data";
 export default function Contact() {
   const ref = useRef<HTMLElement>(null);
   const emailRef = useRef<HTMLAnchorElement>(null);
-  const ringRef = useRef<HTMLSpanElement>(null);
   useReveal(ref);
 
   useEffect(() => {
     if (prefersReducedMotion()) return;
-
-    // pulsing "available" ring
-    if (ringRef.current) {
-      animate(ringRef.current, {
-        scale: [1, 3],
-        opacity: [0.6, 0],
-        duration: 1800,
-        ease: "outQuad",
-        loop: true,
-      });
-    }
 
     // wave through the email letters on hover
     const email = emailRef.current;
@@ -57,12 +45,6 @@ export default function Contact() {
       <h2 className="section__title" data-split-scroll>
         Let&apos;s build something
       </h2>
-      <p className="contact__status" data-reveal>
-        <span className="contact__dot">
-          <span ref={ringRef} className="contact__dot-ring" />
-        </span>
-        Available for freelance &amp; full-time
-      </p>
       <div data-reveal>
         <a ref={emailRef} className="contact__email" href={`mailto:${profile.email}`}>
           {profile.email}
