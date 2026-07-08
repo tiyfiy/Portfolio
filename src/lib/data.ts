@@ -58,7 +58,12 @@ export const skills: { name: string; category: SkillCategory }[] = [
   { name: "DBeaver", category: "tools" },
 ];
 
-export type ProjectVisualKind = "pulse" | "globe" | "rings";
+export type ProjectVisualKind =
+  | "pulse"
+  | "globe"
+  | "rings"
+  | "transit"
+  | "invoice";
 
 export type Project = {
   title: string;
@@ -75,13 +80,13 @@ export const projects: Project[] = [
       "A live digital twin of a city's bus network. It pulls real-time data and predicts where buses actually are, based on what riders report, not just the official schedule. I built the whole stack: Go backend, database, MQTT pipeline for the live data, admin dashboard, web frontend, an Android app, a desktop client in libGDX, and a blockchain layer that stores the tamper-sensitive records so nobody can quietly rewrite the history.",
     tags: ["Go", "MQTT", "Android", "libGDX", "Blockchain", "Real-time"],
     href: "https://github.com/projectBlockchainRIT/projectMariborBusi",
-    visual: "pulse",
+    visual: "transit",
   },
   {
     title: "Invoice compliance app for Shopify",
     description:
       "An embedded Shopify app that keeps merchant invoices compliant. I built the auth flow into a Go backend and wired up the webhooks that move the data between Shopify and the app. Embedded app auth is one of those things that sounds trivial until you've actually done it, so getting it clean was the win here.",
     tags: ["Go", "Shopify", "OAuth", "Webhooks"],
-    visual: "rings",
+    visual: "invoice",
   },
 ];

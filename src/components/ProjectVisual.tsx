@@ -224,10 +224,277 @@ function buildRings(): ChildSpec[] {
   ];
 }
 
+/* MBUSI — a city street grid, tilted like a live transit map, with
+   comets of light running along the bus routes */
+function buildTransit(): ChildSpec[] {
+  const EXTENT = 1.1;
+
+  // irregularly spaced streets along each axis
+  const streetCoords = (n: number) => {
+    const arr: number[] = [];
+    for (let i = 0; i < n; i++) {
+      arr.push(-EXTENT + (i / (n - 1)) * 2 * EXTENT + rand(-0.05, 0.05));
+    }
+    arr[0] = -EXTENT;
+    arr[n - 1] = EXTENT;
+    return arr;
+  };
+  const vx = streetCoords(7); // north-south streets (x positions)
+  const hz = streetCoords(7); // east-west streets (z positions)
+
+  const pts: number[] = [];
+  const bright: number[] = [];
+  const flow: number[] = [];
+  const push = (x: number, y: number, z: number, b: number, f = -1) => {
+    pts.push(x, y, z);
+    bright.push(b);
+    flow.push(f);
+  };
+
+  // streets: dim particle lines on the ground plane
+  const PER_LINE = 85;
+  for (const x of vx) {
+    for (let i = 0; i < PER_LINE; i++) {
+      const z = -EXTENT + (i / (PER_LINE - 1)) * 2 * EXTENT;
+      push(
+        x + rand(-0.008, 0.008),
+        rand(-0.005, 0.005),
+        z + rand(-0.008, 0.008),
+        rand(0.22, 0.45)
+      );
+    }
+  }
+  for (const z of hz) {
+    for (let i = 0; i < PER_LINE; i++) {
+      const x = -EXTENT + (i / (PER_LINE - 1)) * 2 * EXTENT;
+      push(
+        x + rand(-0.008, 0.008),
+        rand(-0.005, 0.005),
+        z + rand(-0.008, 0.008),
+        rand(0.22, 0.45)
+      );
+    }
+  }
+
+  // buildings: faint particle columns rising from some blocks
+  for (let bx = 0; bx < vx.length - 1; bx++) {
+    for (let bz = 0; bz < hz.length - 1; bz++) {
+      if (Math.random() < 0.45) continue;
+      const w = vx[bx + 1] - vx[bx] - 0.1;
+      const d = hz[bz + 1] - hz[bz] - 0.1;
+      if (w < 0.05 || d < 0.05) continue;
+      const cx = (vx[bx] + vx[bx + 1]) / 2;
+      const cz = (hz[bz] + hz[bz + 1]) / 2;
+      const h = rand(0.06, 0.26);
+      const n = Math.floor(h * 190);
+      for (let i = 0; i < n; i++) {
+        push(
+          cx + rand(-w / 2, w / 2),
+          rand(0.01, h),
+          cz + rand(-d / 2, d / 2),
+          rand(0.1, 0.28)
+        );
+      }
+    }
+  }
+
+  // bus routes: staircase paths following the streets; aFlow puts a
+  // comet of light (the bus) on each one
+  const ROUTE_PTS = 130;
+  const addRoute = (phase: number) => {
+    const waypoints: [number, number][] = [];
+    let zi = Math.floor(rand(1, hz.length - 1));
+    waypoints.push([-EXTENT, hz[zi]]);
+    for (let xi = 1; xi < vx.length - 1; xi++) {
+      if (Math.random() < 0.55) {
+        const nzi = Math.max(
+          0,
+          Math.min(hz.length - 1, zi + (Math.random() < 0.5 ? -1 : 1))
+        );
+        if (nzi !== zi) {
+          waypoints.push([vx[xi], hz[zi]]);
+          zi = nzi;
+          waypoints.push([vx[xi], hz[zi]]);
+        }
+      }
+    }
+    waypoints.push([EXTENT, hz[zi]]);
+
+    const segs: { ax: number; az: number; bx: number; bz: number; len: number }[] = [];
+    let total = 0;
+    for (let i = 0; i < waypoints.length - 1; i++) {
+      const [ax, az] = waypoints[i];
+      const [bx, bz] = waypoints[i + 1];
+      const len = Math.hypot(bx - ax, bz - az);
+      segs.push({ ax, az, bx, bz, len });
+      total += len;
+    }
+    for (let i = 0; i < ROUTE_PTS; i++) {
+      const t = i / (ROUTE_PTS - 1);
+      let dist = t * total;
+      let seg = segs[segs.length - 1];
+      for (const s of segs) {
+        if (dist <= s.len) {
+          seg = s;
+          break;
+        }
+        dist -= s.len;
+      }
+      const u = seg.len > 0 ? Math.min(dist / seg.len, 1) : 0;
+      push(
+        seg.ax + (seg.bx - seg.ax) * u,
+        0.03,
+        seg.az + (seg.bz - seg.az) * u,
+        0.9,
+        (t + phase) % 1
+      );
+    }
+  };
+  addRoute(0);
+  addRoute(0.33);
+  addRoute(0.66);
+
+  return [
+    {
+      positions: new Float32Array(pts),
+      bright: new Float32Array(bright),
+      flow: new Float32Array(flow),
+      spin: 0.14, // slow turntable in its own plane
+      incline: [0.6, 0], // tipped up toward the camera
+    },
+  ];
+}
+
+/* Shopify — an invoice sheet: dashed text lines, a compliance check,
+   and a pulse of light circling the border */
+function buildInvoice(): ChildSpec[] {
+  const W = 0.62; // half width
+  const H = 0.82; // half height
+
+  const pts: number[] = [];
+  const bright: number[] = [];
+  const flow: number[] = [];
+  const push = (x: number, y: number, z: number, b: number, f = -1) => {
+    pts.push(x, y, z);
+    bright.push(b);
+    flow.push(f);
+  };
+  const jz = () => rand(-0.02, 0.02);
+
+  // border, parameterised so a comet can circle the sheet
+  const corners: [number, number][] = [
+    [-W, H],
+    [W, H],
+    [W, -H],
+    [-W, -H],
+  ];
+  const segs = corners.map((c, i) => {
+    const n = corners[(i + 1) % 4];
+    return {
+      ax: c[0],
+      ay: c[1],
+      bx: n[0],
+      by: n[1],
+      len: Math.hypot(n[0] - c[0], n[1] - c[1]),
+    };
+  });
+  const perim = segs.reduce((s, g) => s + g.len, 0);
+  const BORDER = 340;
+  for (let i = 0; i < BORDER; i++) {
+    const t = i / BORDER;
+    let d = t * perim;
+    let seg = segs[segs.length - 1];
+    for (const s of segs) {
+      if (d <= s.len) {
+        seg = s;
+        break;
+      }
+      d -= s.len;
+    }
+    const u = seg.len > 0 ? Math.min(d / seg.len, 1) : 0;
+    push(
+      seg.ax + (seg.bx - seg.ax) * u + rand(-0.005, 0.005),
+      seg.ay + (seg.by - seg.ay) * u + rand(-0.005, 0.005),
+      jz(),
+      0.55,
+      t
+    );
+  }
+
+  // dashed rows of "text": broken segments read as words
+  const textLine = (y: number, x0: number, x1: number, b: number) => {
+    let x = x0;
+    while (x < x1) {
+      const word = Math.min(rand(0.08, 0.2), x1 - x);
+      const n = Math.max(2, Math.floor(word / 0.015));
+      for (let i = 0; i < n; i++) {
+        push(
+          x + (i / (n - 1)) * word,
+          y + rand(-0.005, 0.005),
+          jz(),
+          b * rand(0.7, 1.1)
+        );
+      }
+      x += word + rand(0.04, 0.09);
+    }
+  };
+  textLine(0.6, -0.45, 0.1, 0.9); // header
+  textLine(0.46, -0.45, -0.05, 0.45); // address block
+  textLine(0.38, -0.45, -0.12, 0.45);
+  for (let r = 0; r < 4; r++) textLine(0.16 - r * 0.14, -0.45, 0.45, 0.6); // items
+  textLine(-0.52, 0.05, 0.45, 0.95); // total, bottom right
+
+  // compliance mark: a circled tick, bottom left
+  const cx = -0.32;
+  const cy = -0.55;
+  const r = 0.115;
+  for (let i = 0; i < 70; i++) {
+    const a = (i / 70) * Math.PI * 2;
+    push(cx + Math.cos(a) * r, cy + Math.sin(a) * r, jz(), 0.8);
+  }
+  const tick: [number, number][] = [
+    [-0.055, 0.005],
+    [-0.012, -0.05],
+    [0.06, 0.045],
+  ];
+  for (let s = 0; s < tick.length - 1; s++) {
+    const [ax, ay] = tick[s];
+    const [bx, by] = tick[s + 1];
+    for (let i = 0; i <= 16; i++) {
+      const u = i / 16;
+      push(cx + ax + (bx - ax) * u, cy + ay + (by - ay) * u, jz(), 1.0);
+    }
+  }
+
+  // faint paper grain
+  for (let i = 0; i < 240; i++) {
+    push(rand(-W, W), rand(-H, H), rand(-0.03, 0.03), rand(0.07, 0.16));
+  }
+
+  return [
+    {
+      positions: new Float32Array(pts),
+      bright: new Float32Array(bright),
+      flow: new Float32Array(flow),
+    },
+  ];
+}
+
 const BUILDERS: Record<ProjectVisualKind, () => ChildSpec[]> = {
   pulse: buildPulse,
   globe: buildGlobe,
   rings: buildRings,
+  transit: buildTransit,
+  invoice: buildInvoice,
+};
+
+// planar shapes sway instead of spinning — a full turn would show them edge-on
+const SPINS_IDLE: Record<ProjectVisualKind, boolean> = {
+  pulse: true,
+  globe: true,
+  rings: true,
+  transit: false,
+  invoice: false,
 };
 
 export default function ProjectVisual({ kind }: { kind: ProjectVisualKind }) {
@@ -406,7 +673,11 @@ export default function ProjectVisual({ kind }: { kind: ProjectVisualKind }) {
       if (!reduceMotion) {
         elapsed += dt;
         mat.uniforms.uTime.value = elapsed;
-        idleY += dt * 0.22 * tilt.speed;
+        if (SPINS_IDLE[kind]) {
+          idleY += dt * 0.22 * tilt.speed;
+        } else {
+          idleY = Math.sin(elapsed * 0.4) * 0.26;
+        }
         for (const s of spinners) s.holder.rotation.y += dt * s.spin * tilt.speed;
 
         // the blast drains on its own; the hit point trails the cursor
